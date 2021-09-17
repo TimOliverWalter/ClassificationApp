@@ -13,7 +13,6 @@ import plotly.graph_objs as go
 
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import (
-    RandomForestClassifier,
     GradientBoostingClassifier
 )
 from sklearn.metrics import (
@@ -24,6 +23,7 @@ from sklearn.metrics import (
     accuracy_score
 )
 
+
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 app.layout = dbc.Container(
@@ -31,6 +31,8 @@ app.layout = dbc.Container(
         html.H1("Dynamically rendered tab content"),
         html.Hr(),
         dbc.Tabs(
+            id="tabs",
+            children=
             [
                 dbc.Tab(
                     label="Sample data",
@@ -41,7 +43,6 @@ app.layout = dbc.Container(
                     tab_id="new-data"
                 ),
             ],
-            id="tabs",
             active_tab="sample-data",
         ),
         html.Div(
@@ -53,7 +54,7 @@ app.layout = dbc.Container(
 
 @app.callback(
     Output("tab-content", "children"),
-    Input("tabs", "active_tab"),
+    Input("tabs", "active_tab")
 )
 def render_tab_content(active_tab):
     df = pd.read_csv("data/churn_modelling.csv")
@@ -168,9 +169,9 @@ def render_tab_content(active_tab):
                         ),
                         dbc.Row(
                             dash_table.DataTable(
-                                id='table',
+                                id="table",
                                 columns=[{"name": i, "id": i} for i in df.columns],
-                                data=df.to_dict('records'),
+                                data=df.to_dict("records"),
                                 page_size=5
                             )
                         )
@@ -180,26 +181,50 @@ def render_tab_content(active_tab):
         elif active_tab == "new-data":
             return dbc.Row(
                 [
-                    dbc.Col(
-                        dcc.Graph(
-                            figure=px.histogram(
-                                df,
-                                x="Age",
-                                color="Exited"
-                            )
-                        ),
-                        width=6
+                    dbc.Row(
+                        dcc.Upload(
+                            id="upload-data",
+                            children=html.Div([
+                                "Drag and Drop or ",
+                                html.A("Select Files")
+                            ]),
+                            style={
+                                "width": "99%",
+                                "height": "60px",
+                                "lineHeight": "60px",
+                                "borderWidth": "1px",
+                                "borderStyle": "dashed",
+                                "borderRadius": "5px",
+                                "textAlign": "center",
+                                "margin": "10px"
+                            },
+                            multiple=False
+                        )
                     ),
-                    dbc.Col(
-                        dcc.Graph(
-                            figure=px.histogram(
-                                df,
-                                x="Age",
-                                color="Exited"
+                    dbc.Row(
+                        [
+                            dbc.Col(
+                                dcc.Graph(
+                                    figure=px.histogram(
+                                        df,
+                                        x="Age",
+                                        color="Exited"
+                                    )
+                                ),
+                                width=6
+                            ),
+                            dbc.Col(
+                                dcc.Graph(
+                                    figure=px.histogram(
+                                        df,
+                                        x="Age",
+                                        color="Exited"
+                                    )
+                                ),
+                                width=6
                             )
-                        ),
-                        width=6
-                    ),
+                        ]
+                    )
                 ]
             )
     return "No tab selected"

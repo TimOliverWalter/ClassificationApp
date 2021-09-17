@@ -1,1 +1,1 @@
-# Bank Churn
+# Classification App

@@ -2,6 +2,9 @@ import pandas as pd
 import base64
 import io
 
+
+from pages import overview, classifier_selection
+
 import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
@@ -149,6 +152,20 @@ app.layout = html.Div(
                     children=[
                         page2
                     ]
+                ),
+                dcc.Tab(
+                    id="page-dree",
+                    label="Classifier Selection",
+                    children=[
+                        html.Div(
+                            [
+                                html.Div(
+                                    id="output-page-dree",
+                                    children=[]
+                                )
+                            ]
+                        )
+                    ]
                 )
             ]
         )
@@ -172,38 +189,25 @@ def update_page_one(contents):
         y = df["Exited"]
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
 
-        page = html.Div([
-            html.H5(
-                "Text"
-            ),
-            # dcc.Graph(figure=px.histogram(df, x="Age", color="Exited")),
-            dash_table.DataTable(
-                data=df.to_dict(
-                    orient="records"
-                ),
-                columns=[
-                    {"name": i, "id": i} for i in df.columns
-                ],
-                page_size=5
-            ),
-            daq.LEDDisplay(
-                label="Records",
-                value=len(df.index),
-                backgroundColor="#FF5E5E"
-            ),
-            daq.LEDDisplay(
-                label="Train",
-                value=len(X_train.index),
-                backgroundColor="#FF5E5E"
-            ),
-            daq.LEDDisplay(
-                label="Test",
-                value=len(X_test.index),
-                backgroundColor="#FF5E5E"
-            )
+        missing_values_count = df.isnull().sum().to_frame()
+        describe = df.describe(include="all")
+        describe = describe.append(pd.Series(dtype="boolean", name="missing_values"))
 
-        ])
-        return page
+        for index, row in missing_values_count.iterrows():
+            print(index, row[0])
+            if row[0] > 0:
+                describe.loc["missing_values", index] = True
+
+            else:
+                describe.loc["missing_values", index] = False
+
+        missing_values_count = missing_values_count.reset_index()
+        missing_values_count.rename({0: "result", "index": "columns"}, axis=1)
+        describe.insert(0,"",describe.index)
+
+        overview_tab = overview.create_layout(df=df, describe=describe)
+        classifier_tab = classifier_selection.create_layout(df=df)
+        return overview_tab, classifier_tab
 
 
 if __name__ == "__main__":

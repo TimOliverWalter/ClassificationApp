@@ -2,7 +2,6 @@ import pandas as pd
 import base64
 import io
 
-
 from pages import overview, classifier_selection
 
 import dash
@@ -168,16 +167,18 @@ app.layout = html.Div(
                     ]
                 )
             ]
-        )
+        ),
+        dcc.Store(id="intermediate-value")
     ]
 )
 
 
 @app.callback(
-    Output("output-page-one", "children"),
+    Output("intermediate-value", "data"),
     Input("upload-page-one", "contents")
 )
-def update_page_one(contents):
+def parse_data(contents):
+    df =pd.DataFrame()
     if contents is not None:
         content_type, content_string = contents.split(",")
         decoded = base64.b64decode(content_string)
@@ -185,6 +186,18 @@ def update_page_one(contents):
         df = pd.read_csv(
             io.BytesIO(decoded)
         )
+        return df.to_dict(orient="records")
+    return df.to_dict(orient="records")
+
+
+@app.callback(
+    Output("output-page-one", "children"),
+    Input("intermediate-value", "data")
+)
+def update_tab_one(dataset):
+    print(len(dataset))
+    if len(dataset) >0:
+        df = pd.DataFrame.from_dict(dataset)
         X = df.drop(["Exited"], axis=1)
         y = df["Exited"]
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
@@ -197,17 +210,28 @@ def update_page_one(contents):
             print(index, row[0])
             if row[0] > 0:
                 describe.loc["missing_values", index] = True
-
             else:
                 describe.loc["missing_values", index] = False
 
         missing_values_count = missing_values_count.reset_index()
         missing_values_count.rename({0: "result", "index": "columns"}, axis=1)
-        describe.insert(0,"",describe.index)
+        describe.insert(0, "", describe.index)
 
         overview_tab = overview.create_layout(df=df, describe=describe)
-        classifier_tab = classifier_selection.create_layout(df=df)
-        return overview_tab, classifier_tab
+
+        return overview_tab
+    return html.Div()
+
+
+@app.callback(
+    Output("output-page-dree", "children"),
+    Input("intermediate-value", "data")
+)
+def update_tab_dree(dataset):
+    df = pd.DataFrame.from_dict(dataset)
+    classifier_tab = classifier_selection.create_layout(df=df)
+
+    return classifier_tab
 
 
 if __name__ == "__main__":
